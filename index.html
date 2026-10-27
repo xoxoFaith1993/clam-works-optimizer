@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Paste your Legends of Idleon save to plan Clam Work upgrades and Scurge points. Runs entirely in your browser.">
+<style>html,body{margin:0}img{max-width:100%}[hidden]{display:none!important}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<title>Clam Works Optimizer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: a tide-pool console - paste box up top, then two tabs of plans; pearl-and-kelp palette. */
+:root {
+  --bg: #eef3f2; --surface: #ffffff; --sunk: #e3ebe9; --line: #cfdcd9;
+  --ink: #142624; --muted: #4e6a66; --faint: #7f9894;
+  --accent: #0f7a6a; --accent-ink: #ffffff; --pearl: #8a6418;
+  --good: #1f7a3a; --bad: #b0392e; --warn: #9a5b0b;
+  --display: "Sora", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d1716; --surface: #142321; --sunk: #1b2d2b; --line: #28403d;
+  --ink: #e4efed; --muted: #9fb7b3; --faint: #6e8884;
+  --accent: #5fd0bb; --accent-ink: #062621; --pearl: #e8d2a4;
+  --good: #7fd896; --bad: #f08a80; --warn: #f0b562; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0d1716; --surface: #142321; --sunk: #1b2d2b; --line: #28403d;
+  --ink: #e4efed; --muted: #9fb7b3; --faint: #6e8884;
+  --accent: #5fd0bb; --accent-ink: #062621; --pearl: #e8d2a4;
+  --good: #7fd896; --bad: #f08a80; --warn: #f0b562; color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body); }
+.wrap { max-width: 1160px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
+h1, h2 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(26px, 4vw, 34px); letter-spacing: -0.01em; }
+h2 { font-size: 17px; }
+p { margin: 0; }
+.lede { color: var(--muted); max-width: 64ch; }
+.num, .v, td.num { font-variant-numeric: tabular-nums; }
+button, select, input, textarea { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+button { cursor: pointer; padding: 8px 14px; font-weight: 500; }
+button:hover { border-color: var(--faint); }
+button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+select, input { padding: 7px 10px; }
+label.field { display: grid; gap: 4px; font-size: 12px; color: var(--muted); letter-spacing: 0.02em; }
+label.field input { width: 150px; }
+
+.intake { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 12px; }
+.intake textarea { width: 100%; min-height: 130px; padding: 12px; font: 13px/1.45 var(--mono); resize: vertical; background: var(--sunk); }
+.intake .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.intake .how { color: var(--muted); font-size: 13px; }
+.intake.compact textarea { min-height: 70px; }
+.msg { font-size: 13px; }
+.msg.bad { color: var(--bad); } .msg.good { color: var(--good); }
+.privacy { font-size: 12px; color: var(--faint); }
+
+.settings { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+.tab { background: none; border: none; border-bottom: 2px solid transparent; border-radius: 0; padding: 10px 14px; color: var(--muted); font-weight: 600; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+.card .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+.card .v { font: 600 22px/1.3 var(--display); margin-top: 2px; }
+.card .s { color: var(--faint); font-size: 12px; }
+.bar { height: 6px; background: var(--sunk); border-radius: 99px; overflow: hidden; margin-top: 8px; }
+.bar > div { height: 100%; background: var(--pearl); }
+
+.split { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 860px) { .split { grid-template-columns: 1fr; } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 10px; min-width: 0; }
+.hint { color: var(--muted); font-size: 13px; }
+ol.plan { list-style: none; margin: 0; padding: 0; }
+ol.plan li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 6px; border-top: 1px solid var(--line); }
+.plan-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.plan-head .seg button { padding: 5px 12px; font-size: 13px; }
+.buys { display: grid; gap: 2px; margin-top: 4px; }
+.buys div { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+.buys .lv { color: var(--muted); white-space: nowrap; }
+ol.plan li:first-child { border-top: none; }
+ol.plan li.next { background: color-mix(in srgb, var(--accent) 12%, transparent); border-radius: 8px; }
+ol.plan .n { color: var(--faint); font: 500 12px var(--mono); text-align: right; }
+ol.plan .name { font-weight: 600; }
+ol.plan .sub { color: var(--muted); font-size: 13px; }
+ol.plan .when { text-align: right; font-size: 13px; color: var(--muted); white-space: nowrap; }
+ol.plan .when b { color: var(--ink); }
+.tag { display: inline-block; font-size: 11px; padding: 0 7px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); margin-left: 6px; vertical-align: 1px; }
+.tag.now { color: var(--good); border-color: var(--good); }
+.tag.unlock { color: var(--warn); border-color: var(--warn); }
+.table { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 7px 6px; border-top: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 500; font-size: 12px; border-top: none; }
+td.num, th.num { text-align: right; white-space: nowrap; }
+td .desc { color: var(--muted); font-size: 12px; }
+tr.locked td { color: var(--faint); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: none; border-radius: 0; background: var(--surface); color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.ok { color: var(--good); } .no { color: var(--bad); }
+.callout { border-left: 3px solid var(--pearl); background: var(--sunk); padding: 10px 12px; }
+.empty { border: 1px dashed var(--line); border-radius: 12px; padding: 22px; color: var(--muted); display: grid; gap: 8px; }
+.empty ul { margin: 0; padding-left: 18px; }
+footer { color: var(--faint); font-size: 12px; }
+footer a { color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) { ol.plan li { transition: background .2s; } }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header style="display:grid;gap:6px">
+    <h1>Clam Works Optimizer</h1>
+    <p class="lede">Paste your Legends of Idleon save and get the fastest order to buy Clam Work upgrades and spend Scurge points before your next worker-class promotion.</p>
+  </header>
+
+  <section class="intake" id="intake" aria-labelledby="intake-title">
+    <h2 id="intake-title">Your save</h2>
+    <p class="how">On <a href="https://idleontoolbox.com" target="_blank" rel="noopener">idleontoolbox.com</a>, open the account menu (top right) and click <b>Copy raw data</b>, then paste it here. A Toolbox JSON export file works too.</p>
+    <textarea id="json" spellcheck="false" placeholder='{"Lv0_0": [...], "CharacterClass_0": ..., ...}' aria-label="Save JSON"></textarea>
+    <div class="row">
+      <button class="primary" id="go" type="button">Optimize</button>
+      <label class="field" style="display:inline-grid"><span class="sr" style="position:absolute;left:-9999px">Load a file</span>
+        <input id="file" type="file" accept=".json,.txt,application/json" style="width:auto;padding:5px"></label>
+      <span class="msg" id="msg" role="status"></span>
+    </div>
+    <p class="privacy">Everything runs in your browser. Your save isn't uploaded anywhere.</p>
+  </section>
+
+  <div id="result" hidden>
+    <div style="display:grid;gap:16px">
+      <div class="settings">
+        <label class="field">Character at the Clamworks<select id="character"></select></label>
+        <label class="field">Max damage, no crit (AFK Info)<input id="damage" type="text" placeholder="e.g. 258T◆" title="The Max Dmg Req number in AFK Info. Multikill uses damage without crit."></label>
+        <label class="field">MULTI-SCALPING in game<input id="scalping" type="text" inputmode="decimal" placeholder="e.g. 1.58x"></label>
+        <label class="field">Pearls per hour<input id="pearlsPerHour" type="number" min="1" placeholder="auto"></label>
+      </div>
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="tab-clam" aria-selected="true" data-tab="clam">Clamworks</button>
+        <button class="tab" role="tab" id="tab-scurge" aria-selected="false" data-tab="scurge">Scurge Works</button>
+      </div>
+      <div id="clam"></div>
+      <div id="scurge" hidden></div>
+    </div>
+  </div>
+
+  <div class="empty" id="empty">
+    <b>What you'll get</b>
+    <ul>
+      <li><b>Clamworks:</b> which pearl upgrade to buy next until your worker-class promotion, accounting for its success chance. Switch to <b>Simple</b> for a few grouped shopping lists instead.</li>
+      <li><b>Scurge Works:</b> where each Scurge point should go, a Self Affliction switch for farming Scurge EXP vs pearls, a leveling forecast, and a recommendation on what to farm.</li>
+      <li><b>Your real numbers:</b> paste again after a farming session and it measures your actual pearls and clam kills per hour from the difference. Type a few values from the game (max damage, MULTI-SCALPING) and every character is corrected.</li>
+    </ul>
+  </div>
+
+  <footer>Game formulas from <a href="https://github.com/Morta1/IdleonToolbox" target="_blank" rel="noopener">Idleon Toolbox</a> by Morta1 (GPL-3.0), checked against the game's code. Not affiliated with Legends of Idleon.</footer>
+</div>
+
+<script src="core.js"></script>
+<script>
+const SUFFIXES = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'];
+const big = (n) => {
+  if (!Number.isFinite(n)) return '∞';
+  const abs = Math.abs(n);
+  if (abs < 1000) return (Math.round(n * 100) / 100).toLocaleString();
+  const tier = Math.floor(Math.log10(abs) / 3);
+  if (tier >= SUFFIXES.length) return n.toExponential(2);
+  return (n / Math.pow(1000, tier)).toFixed(2) + SUFFIXES[tier];
+};
+// Long spans (days, years) for the leveling forecast.
+const longTime = (h) => (h < 48 ? hours(h) : h < 24 * 365 ? Math.round(h / 24) + ' days' : (h / (24 * 365)).toFixed(1) + ' years');
+const hours = (h) => {
+  if (!Number.isFinite(h)) return 'never';
+  if (h <= 0) return 'now';
+  if (h < 1) return Math.max(1, Math.round(h * 60)) + ' min';
+  if (h < 48) return h.toFixed(1) + ' h';
+  const d = Math.floor(h / 24);
+  return d + 'd ' + Math.round(h - d * 24) + 'h';
+};
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const $ = (id) => document.getElementById(id);
+const store = {
+  get(key, fallback) { try { const v = localStorage.getItem(key); return v == null ? fallback : JSON.parse(v); } catch { return fallback; } },
+  set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } }
+};
+
+let save = null;
+let data = null;
+let tab = 'clam';
+const settings = store.get('cwo-settings', {});
+let scurgeMode = settings.scurgeMode || 'pearls';
+
+// Pastes of the same account over time, to measure real pearl income.
+const historyKey = (snap) => 'cwo-history-' + snap.accountKey;
+function remember(saveObj) {
+  const snap = ClamCore.snapshot(saveObj);
+  // Same classes in the same slots: treat it as the same account.
+  const data = saveObj.data ?? saveObj;
+  const slots = Object.keys(data).filter((k) => /^CharacterClass_\d+$/.test(k)).sort();
+  const accountKey = slots.map((k) => data[k]).join('.');
+  snap.accountKey = accountKey;
+  saveObj.accountKey = accountKey;
+  const list = store.get(historyKey(snap), []).filter((p) => p.t < snap.t);
+  list.push(snap);
+  store.set(historyKey(snap), list.slice(-200));
+  return list;
+}
+
+function parseText(text) {
+  let content;
+  try { content = JSON.parse(text); } catch { throw new Error("That isn't valid JSON. Copy everything from the first { to the last }."); }
+  if (!content || typeof content !== 'object' || Array.isArray(content)) throw new Error("This doesn't look like an Idleon save.");
+  const raw = content.data && typeof content.data === 'object' ? content : { data: content };
+  if (!Object.keys(raw.data).some((k) => /^Lv0_\d+$/.test(k))) {
+    throw new Error('No characters found. Use Copy raw data in the Toolbox: the save has keys like Lv0_0 and CharacterClass_0.');
+  }
+  const opt = raw.data.OptLacc ?? raw.data.OptionsListAccount;
+  const opts = typeof opt === 'string' ? JSON.parse(opt) : opt;
+  if (!opts || !(Number(opts[464]) >= 0)) throw new Error('This save has no Clam Work yet.');
+  raw.savedAt = Number(content.lastUpdated) || Date.now();
+  return raw;
+}
+
+function run() {
+  const params = { scurgeMode, simpleEvery: settings.simpleEvery ?? 1 };
+  if (settings.characterId != null) params.characterId = settings.characterId;
+  if (settings.pearlsPerHour) params.pearlsPerHour = settings.pearlsPerHour;
+  data = ClamCore.analyze(save, { ...getCalibration(), ...params }, save.history ?? []);
+  $('character').innerHTML = data.characters.map((c) =>
+    `<option value="${c.id}" ${data.character?.id === c.id ? 'selected' : ''}>${esc(c.name)}${c.atClamworks ? ' (at Clamworks)' : ''}</option>`).join('');
+  $('scalping').value = '';
+  $('scalping').placeholder = scalpingHint(data);
+  $('damage').value = '';
+  $('damage').placeholder = damageHint(data);
+  $('pearlsPerHour').placeholder = 'auto: ' + big(data.rateSource === 'typed' ? data.estimatedPearlsPerHour : data.pearlsPerHour);
+  $('pearlsPerHour').value = settings.pearlsPerHour ?? '';
+  $('result').hidden = false;
+  $('empty').hidden = true;
+  $('intake').classList.add('compact');
+  show();
+}
+
+function load(text) {
+  $('msg').className = 'msg';
+  $('msg').textContent = 'Working…';
+  setTimeout(() => {
+    try {
+      save = parseText(text);
+      save.history = remember(save);
+      run();
+      const pastes = save.history.length;
+      $('msg').className = 'msg good';
+      $('msg').textContent = 'Loaded. ' + (pastes > 1 ? `Measuring pearls per hour from ${pastes} pastes.` : 'Paste again later to measure your real pearls per hour.');
+    } catch (e) {
+      $('msg').className = 'msg bad';
+      $('msg').textContent = e.message || String(e);
+    }
+  }, 20);
+}
+
+$('go').onclick = () => load($('json').value);
+$('file').onchange = async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const text = await file.text();
+  $('json').value = text.length > 200000 ? text.slice(0, 2000) + '\n…' : text;
+  load(text);
+};
+$('json').addEventListener('paste', (e) => {
+  const text = e.clipboardData?.getData('text');
+  if (text && text.trim().startsWith('{')) setTimeout(() => load($('json').value), 0);
+});
+
+document.querySelectorAll('.tab').forEach((b) => b.onclick = () => {
+  tab = b.dataset.tab;
+  document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', String(t === b)));
+  show();
+});
+const rerun = () => { store.set('cwo-settings', settings); if (save) run(); };
+$('character').onchange = (e) => { settings.characterId = Number(e.target.value); rerun(); };
+// In-game readings (damage, MULTI-SCALPING, Self Affliction limit) are kept per account in this
+// browser, the same way the desktop program keeps them: one damage reading corrects every
+// character, and a MULTI-SCALPING reading fills in for characters without their own.
+const calibrationKey = () => 'cwo-calibration-' + (save?.accountKey ?? 'default');
+const getCalibration = () => store.get(calibrationKey(), {});
+function calibrate(type, value) {
+  const id = data?.character?.id;
+  if (!save || id == null) return;
+  try {
+    const next = ClamCore.calibrate(save, save.history ?? [], getCalibration(), { type, characterId: id, value });
+    store.set(calibrationKey(), next);
+  } catch (e) {
+    $('msg').className = 'msg bad';
+    $('msg').textContent = "Couldn't use that reading: " + (e.message || e);
+  }
+  run();
+}
+const scalpingHint = (d) => (d.multiKillSource === 'reading'
+  ? d.scalping.shown.toFixed(2) + 'x now, from your reading'
+  : d.multiKillSource === 'learned'
+    ? d.scalping.shown.toFixed(2) + 'x, from your other characters'
+    : 'read it on ' + (d.character?.name ?? 'this character'));
+// The game writes big damage as K/M/B/T with a ◆ for x1e18 (197B◆ is 1.97e29).
+const gameBig = (n) => (n >= 1e21 ? big(n / 1e18) + '◆' : big(n));
+const damageHint = (d) => (d.damageSource === 'estimate' ? 'e.g. 258T◆'
+  : 'auto: ' + gameBig(d.damage / Math.pow(100, d.scurge?.upgrades?.[2]?.level ?? 0)) + ' (learned)');
+$('damage').onchange = (e) => calibrate('damage', e.target.value.trim());
+$('scalping').onchange = (e) => calibrate('scalping', e.target.value.trim());
+['multiKillRatios', 'multiKillRatio', 'damages', 'afflictionLimits', 'scalping', 'lastCharacterId'].forEach((key) => delete settings[key]);
+$('pearlsPerHour').onchange = (e) => { settings.pearlsPerHour = e.target.value; rerun(); };
+
+const group = (steps, keyOf) => steps.reduce((runs, step, i) => {
+  const last = runs[runs.length - 1];
+  if (last && keyOf(last.steps[0]) === keyOf(step)) last.steps.push(step);
+  else runs.push({ first: i + 1, steps: [step] });
+  return runs;
+}, []);
+
+const rateNote = (d) => {
+  const m = d.measured;
+  if (d.rateSource === 'typed') return 'your number';
+  if (d.rateSource === 'carried') return 'last measured rate × your new drop rate · re-measuring';
+  if (d.rateSource === 'measured') return 'measured from ' + m.saves + ' pastes over ' + hours(m.hours);
+  if (m.changedAt) return 'estimate · your drop rate changed since your last paste';
+  return 'estimate · paste again later to measure';
+};
+
+let planMode = settings.planMode ?? 'best';
+const EVERY = [[0.5, '30 min'], [1, 'hour'], [3, '3 hours'], [8, '8 hours']];
+
+const promotedRow = (d, at) => `<li><span class="n">✓</span><span><span class="name">Promoted to class ${d.workerClass + 1}</span><div class="sub">~${Math.round(d.promotion.expectedTries)} tries, ${big(d.promotion.expectedPearls)} pearls in all · resets pearl upgrades, pearls and Scurge</div></span><span class="when">≈ <b>${hours(at)}</b></span></li>`;
+
+// Simple mode: the best plan bundled into check-ins, each a short shopping list grouped by upgrade.
+function renderSimple(d) {
+  const s = d.simplePlan;
+  const extra = s.promoteAtHours - d.pearlPlan.promoteAtHours;
+  return `
+    <p class="hint">Check in every <select id="simpleEvery" aria-label="Check in every">${EVERY.map(([v, label]) =>
+      `<option value="${v}" ${s.everyHours === v ? 'selected' : ''}>${label}</option>`).join('')}</select>
+      and buy each list top to bottom, then put the rest into promotion tries.
+      ${extra > 1 / 60 ? `About ${hours(extra)} slower than the best order.` : 'Same pace as the best order.'}</p>
+    <ol class="plan">${s.checkIns.map((ci, i) => `<li class="${i === 0 ? 'next' : ''}">
+        <span class="n">${i + 1}</span>
+        <span><span class="name">${ci.atHours <= 1e-9 ? 'Now' : 'In ' + hours(ci.atHours)}</span> <span class="sub">${big(ci.cost)} pearls</span>
+          <div class="buys">${ci.buys.map((b) => `<div><span>${esc(b.name)} ×${b.count}</span><span class="lv">Lv ${b.from} → ${b.to}</span></div>`).join('')}</div></span>
+        <span class="when">${ci.atHours <= 1e-9 ? '<b>ready</b>' : ''}</span>
+      </li>`).join('') || '<li><span></span><span>Nothing worth buying: put everything into promotion tries.</span><span></span></li>'}
+      ${promotedRow(d, s.promoteAtHours)}
+    </ol>`;
+}
+
+function renderClam(d) {
+  const plan = d.pearlPlan;
+  const runs = group(plan.steps, (s) => s.index);
+  const simple = planMode === 'simple';
+  const active = simple ? d.simplePlan : plan;
+  const saved = plan.saveOnlyHours - active.promoteAtHours;
+  return `
+  <div style="display:grid;gap:16px">
+  <div class="cards">
+    <div class="card"><div class="k">Worker class</div><div class="v">${d.workerClass}</div><div class="s">promote for class ${d.workerClass + 1}</div></div>
+    <div class="card"><div class="k">Pearls</div><div class="v">${big(d.pearls)}</div><div class="s">of ${big(d.promotionCost)} to promote</div><div class="bar"><div style="width:${Math.min(100, 100 * d.pearls / d.promotionCost)}%"></div></div></div>
+    <div class="card"><div class="k">Pearls per hour</div><div class="v">${big(d.pearlsPerHour)}</div><div class="s">${rateNote(d)}${d.afflictionOn ? ' · with Self Affliction off (it is on now)' : ''}</div></div>
+    <div class="card"><div class="k">Promotion, on average</div><div class="v">${hours(active.promoteAtHours)}</div><div class="s">${simple ? `best order: ${hours(plan.promoteAtHours)}` : `just saving and trying: ${hours(plan.saveOnlyHours)}`}</div></div>
+    <div class="card"><div class="k">Promotion odds</div><div class="v">${(d.promotion.chance * 100).toFixed(1)}% a try</div><div class="s">${big(d.promotion.cost)} per try · ~${Math.round(d.promotion.expectedTries)} tries on average · half by ${d.promotion.medianTries}, 1 in 10 needs ${d.promotion.unluckyTries}+</div></div>
+    <div class="card"><div class="k">Time saved</div><div class="v ${saved > 0 ? 'ok' : ''}">${hours(saved)}</div><div class="s">${simple ? `${d.simplePlan.checkIns.length} check-ins` : `${plan.steps.length} purchases`}</div></div>
+  </div>
+  <div class="split">
+    <section class="panel">
+      <div class="plan-head"><h2>What to buy</h2>
+        <div class="seg" id="planMode">${[['best', 'Best order'], ['simple', 'Simple']].map(([mode, label]) =>
+          `<button data-plan="${mode}" class="${planMode === mode ? 'on' : ''}" aria-pressed="${planMode === mode}">${label}</button>`).join('')}</div></div>
+      ${simple ? renderSimple(d) : `
+      <p class="hint">Each purchase was picked by simulating the rest of the run to your promotion. Buy these as they come up and put the rest into promotion tries. Failed tries keep your upgrades.</p>
+      <ol class="plan">${runs.map((run, i) => {
+        const a = run.steps[0], z = run.steps[run.steps.length - 1];
+        const total = run.steps.reduce((sum, s) => sum + s.cost, 0);
+        const gain = run.steps.reduce((m, s) => m * (1 + s.gainPercent / 100), 1);
+        const ready = a.atHours <= 1e-9;
+        return `<li class="${i === 0 ? 'next' : ''}">
+          <span class="n">${run.first}</span>
+          <span><span class="name">${esc(a.name)}</span> <span class="sub">Lv ${a.fromLevel} → ${z.toLevel}${run.steps.length > 1 ? ` (×${run.steps.length})` : ''}</span>
+            ${ready ? '<span class="tag now">buy now</span>' : ''}${a.unlocks ? '<span class="tag unlock">unlocks first</span>' : ''}
+            <div class="sub">${big(total)} pearls${gain > 1.0001 ? ` · +${((gain - 1) * 100).toFixed(1)}% pearls/hr` : ' · makes every later upgrade cheaper'}</div></span>
+          <span class="when">${ready ? '<b>ready</b>' : `at <b>${hours(z.atHours)}</b>`}</span>
+        </li>`;
+      }).join('') || '<li><span></span><span>Nothing worth buying: save up and promote.</span><span></span></li>'}
+      ${promotedRow(d, plan.promoteAtHours)}
+      </ol>`}
+    </section>
+    <section class="panel">
+      <h2>Your upgrades</h2>
+      <p class="hint">${d.mobs} clams on the map · pearl value ${big(d.pearlValue)} · multikill ${big(d.multiKill)}${d.multiKillSource === 'estimate' ? ' (estimate)' : ''} · drop rate ${big(d.dropRate)}x</p>
+      <div class="table"><table>
+        <tr><th>Upgrade</th><th class="num">Lv</th><th class="num">Next cost</th></tr>
+        ${d.upgrades.map((u) => `<tr class="${u.unlocked ? '' : 'locked'}">
+          <td>${esc(u.name)}<div class="desc">${esc(u.description)}</div></td>
+          <td class="num">${u.level}</td>
+          <td class="num">${u.maxed ? '<b>MAX</b>' : u.unlocked ? big(u.cost) : `unlocks at ${big(u.unlockAt)}`}</td></tr>`).join('')}
+      </table></div>
+    </section>
+  </div></div>`;
+}
+
+function renderScurge(d) {
+  const s = d.scurge;
+  if (!s.upgrades.some((u) => u.unlocked) && s.level === 0) {
+    return '<div class="empty">Scurge Works unlocks through the Menagerie. Once you have Scurge levels, your point plan shows here.</div>';
+  }
+  const runs = group(s.plan, (p) => p.index + (p.future ? 'f' : 'n'));
+  const margin = d.damage / d.clamHp;
+  return `
+  <div style="display:grid;gap:16px">
+  <div class="cards">
+    <div class="card"><div class="k">Scurge LV</div><div class="v">${s.level}</div><div class="s">${big(s.exp)} / ${big(s.expReq)} EXP</div><div class="bar"><div style="width:${Math.min(100, 100 * s.exp / s.expReq)}%"></div></div></div>
+    <div class="card"><div class="k">Points to spend</div><div class="v ${s.permanentPointsLeft > 0 ? 'ok' : ''}">${s.permanentPointsLeft}</div><div class="s">${s.loadouts.reserve ? `+ ${Math.min(s.loadouts.reserve, s.loadouts.free)} kept for Self Affliction` : '1 point per Scurge LV'}</div></div>
+    <div class="card"><div class="k">Scurge EXP per kill</div><div class="v">${big(s.expPerKill)}</div><div class="s">active kills only</div></div>
+    <div class="card"><div class="k">Next Scurge LV in</div><div class="v">${hours(s.hoursToNextLevel)}</div><div class="s">${big(Math.max(0, s.expReq - s.exp))} EXP to go = ${big(s.killsToNextLevel)} kills at ${big(d.activeKillsPerHour)} kills/hr (${d.activeKillsSource === 'measured' ? 'measured' : 'respawn timer'})</div></div>
+  </div>
+  <div class="seg" role="group" aria-label="Plan for">
+    <button data-mode="pearls" aria-pressed="${s.mode === 'pearls'}">Permanent points for pearls</button>
+    <button data-mode="exp" aria-pressed="${s.mode === 'exp'}">Permanent points for Scurge EXP</button>
+  </div>
+  ${s.recommendation ? (() => {
+    const r = s.recommendation;
+    const wanted = r.pointsTo === 'exp' ? 'exp' : 'pearls';
+    const title = r.action === 'scurge'
+      ? `Keep farming Scurge EXP, points into ${esc(r.point)}`
+      : `Switch to farming pearls, points into ${esc(r.point)}`;
+    const why = r.action === 'scurge'
+      ? `The next Scurge level takes ${longTime(r.nextLevelHours)} and its point gets you promoted about ${longTime(r.gainHours)} sooner. Worth it for about ${r.worthLevels} more level${r.worthLevels === 1 ? '' : 's'} (${longTime(r.sessionHours)} of farming), then switch to pearls.`
+      : `A Scurge level now takes ${longTime(r.nextLevelHours)} with pearls paused but only gets you promoted ${longTime(r.gainHours)} sooner. Hold Self Affliction to reset it and farm pearls.`;
+    return `<div class="callout" style="margin-top:10px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+      <div><b>Recommendation:</b> ${title}<div class="hint" style="margin-top:2px">${why}</div></div>
+      ${s.mode !== wanted ? `<button id="useRecommendation" data-mode="${wanted}">Use this</button>` : ''}
+    </div>`;
+  })() : ''}
+  ${s.loadouts.reserve ? `<section class="panel" style="margin-top:12px">
+    <h2>Self Affliction switch</h2>
+    <p class="hint">Hold Self Affliction down in game to reset it and get the points back, so keep ${s.loadouts.reserve} points free for it and flip it with what you're farming.</p>
+    <div class="table"><table>
+      <tr><th>When you're farming</th><th class="num">Self Affliction</th><th class="num">Scurge EXP per kill</th><th class="num">Pearl rate</th></tr>
+      <tr><td>Scurge EXP</td><td class="num">${s.loadouts.exp.affliction}</td><td class="num">${big(s.loadouts.exp.expPerKill)}</td><td class="num">${(s.loadouts.exp.pearlRate * 100).toFixed(0)}%</td></tr>
+      <tr><td>Pearls</td><td class="num">0 (hold to reset)</td><td class="num">${big(s.loadouts.pearls.expPerKill)}</td><td class="num">100%</td></tr>
+    </table></div>
+    ${s.loadouts.exp.affliction < s.loadouts.reserve ? `<p class="hint">Only ${s.loadouts.exp.affliction} of your ${s.loadouts.reserve} switch points are free right now; the rest come with your next Scurge levels.</p>` : ''}
+  </section>` : ''}
+  <div class="split">
+    <section class="panel">
+      <h2>Your permanent points</h2>
+      <p class="hint">${s.mode === 'pearls'
+        ? 'Each point goes where it gets you to promotion soonest, re-planning your pearl upgrades for every option.'
+        : 'Each point goes where it earns the most Scurge levels per kill.'} These stay until you promote; Self Affliction isn't here because it's your switch (below). Later points come with future Scurge levels.</p>
+      <ol class="plan">${runs.map((run, i) => {
+        const a = run.steps[0], z = run.steps[run.steps.length - 1];
+        return `<li class="${i === 0 && !a.future ? 'next' : ''}">
+          <span class="n">${run.first}</span>
+          <span><span class="name">${esc(a.name)}</span> <span class="sub">Lv ${a.toLevel - 1} → ${z.toLevel}</span>
+            ${a.future ? '' : '<span class="tag now">spend now</span>'}
+            <div class="sub">${s.mode === 'pearls' ? `promotion in ${hours(z.promoteHours)}` : `${big(z.expPerKill)} EXP per kill`}</div></span>
+          <span class="when">${a.future ? `at <b>LV ${a.atScurgeLevel}${z.atScurgeLevel !== a.atScurgeLevel ? '–' + z.atScurgeLevel : ''}</b>` : '<b>now</b>'}</span>
+        </li>`;
+      }).join('') || '<li><span></span><span>No upgrades available yet.</span><span></span></li>'}
+      </ol>
+    </section>
+    <section class="panel">
+      <h2>Scurge upgrades</h2>
+      <div class="table"><table>
+        <tr><th>Upgrade</th><th class="num">Lv</th><th class="num">Needs</th></tr>
+        ${s.upgrades.map((u) => `<tr class="${u.unlocked ? '' : 'locked'}">
+          <td>${esc(u.name)}${u.soloUseless ? '<span class="tag">only with other players</span>' : ''}<div class="desc">${esc(u.description)}</div></td>
+          <td class="num">${u.level}</td>
+          <td class="num">${u.unlocked ? '<span class="ok">✓</span>' : 'LV ' + u.levelReq}</td></tr>`).join('')}
+      </table></div>
+    </section>
+  </div>
+  <section class="panel" style="margin-top:16px">
+    <h2>Leveling forecast</h2>
+    <p class="hint">Farming Scurge EXP non-stop from now: Self Affliction at ${s.loadouts.reserve || s.upgrades[2].level}, each new point spent as the EXP plan says, at ${big(s.forecast.killsPerHour)} kills/hr (${d.activeKillsSource === 'measured' ? 'measured' : 'respawn timer'}). Times are hours of active play.</p>
+    <div class="table"><table>
+      <tr><th>Scurge LV</th><th>Unlocks</th><th class="num">Active farming</th><th class="num">EXP per kill then</th></tr>
+      ${s.forecast.rows.map((r) => `<tr><td>${r.level}</td><td>${r.unlocks ? esc(r.unlocks) : ''}</td><td class="num">${longTime(r.hours)}</td><td class="num">${big(r.expPerKill)}</td></tr>`).join('')}
+      ${s.forecast.capped ? `<tr class="locked"><td colspan="4">Beyond this, each level takes longer than the forecast follows.</td></tr>` : ''}
+    </table></div>
+  </section>
+  <section class="panel">
+    <h2>Self Affliction</h2>
+    <p class="hint">Each level divides Clamworks damage by 100 for +200% Scurge EXP. Clams respawn once a minute, so you only have to keep up with that, and crits do most of that work. Multikill uses damage without crit, so it drops with every level. Scurge upgrades are shared: this cuts damage, multikill and pearls for everyone farming the Clamworks.</p>
+    <label style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted)">Highest level ${esc(d.character?.name ?? 'this character')} can keep up with
+      <input id="afflictionLimit" type="number" min="0" max="10" step="1" style="width:80px" value="${s.limitFromYou ? s.maxAffliction : ''}" placeholder="${s.maxAffliction}">
+      <span>${s.limitFromYou ? 'from your testing' : 'not set: using your current level'}</span></label>
+    <div class="table"><table>
+      <tr><th>Level</th><th class="num">Damage, no crit</th><th class="num">Multikill</th><th class="num">Scurge EXP</th><th class="num">Pearl rate</th></tr>
+      ${s.afflictionTable.map((r) => `<tr class="${r.withinLimit ? '' : 'locked'}"><td>${r.level}${r.level === s.upgrades[2].level ? ' <span class="tag">yours</span>' : ''}${r.withinLimit ? '' : ' <span class="tag">over your limit</span>'}</td>
+        <td class="num">${big(r.damage)}</td><td class="num">${big(r.multiKill)}</td>
+        <td class="num">${r.expMulti}x</td><td class="num">${r.withinLimit ? (r.pearlRateVsNow * 100).toFixed(0) + '%' : '-'}</td></tr>`).join('')}
+    </table></div>
+  </section></div>`;
+}
+
+function show() {
+  if (!data) return;
+  $('clam').hidden = tab !== 'clam';
+  $('scurge').hidden = tab !== 'scurge';
+  if (tab === 'clam') {
+    $('clam').innerHTML = renderClam(data);
+    $('planMode').querySelectorAll('button').forEach((b) => b.onclick = () => {
+      planMode = b.dataset.plan; settings.planMode = planMode; store.set('cwo-settings', settings); show();
+    });
+    $('simpleEvery')?.addEventListener('change', (e) => { settings.simpleEvery = Number(e.target.value); rerun(); });
+  }
+  else {
+    $('scurge').innerHTML = renderScurge(data);
+    $('afflictionLimit').onchange = (e) => calibrate('limit', e.target.value.trim());
+    $('useRecommendation')?.addEventListener('click', (e) => { scurgeMode = e.target.dataset.mode; settings.scurgeMode = scurgeMode; rerun(); });
+    $('scurge').querySelectorAll('.seg button').forEach((b) => b.onclick = () => {
+      scurgeMode = b.dataset.mode; settings.scurgeMode = scurgeMode; rerun();
+    });
+  }
+}
+</script>
+
+</body>
+</html>
